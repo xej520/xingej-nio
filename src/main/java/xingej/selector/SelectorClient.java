@@ -26,6 +26,8 @@ public class SelectorClient {
 
             while (executeTimes > 0) {
                 executeTimes--;
+                //在JavaNIO中，是通过selector.select()去查询每个通道是否有到达事件，如果没有事件，
+                //则一直阻塞在这里，因此，这种方式，会导致用户线程的阻塞。
                 int readyChannelNum = selector.select();
                 if (readyChannelNum == 0) {
                     continue;
@@ -52,7 +54,6 @@ public class SelectorClient {
                         socketChannel1.write(sendBuffer);
                     }
                 }
-
             }
         } catch (IOException e) {
             e.printStackTrace();
