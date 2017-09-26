@@ -1,0 +1,8 @@
+hello io, nio, netty
+ByteBuffer是NIO里用得最多的Buffer，它包含两个实现方式：HeapByteBuffer是基于Java堆的实现，
+而DirectByteBuffer则使用了unsafe的API进行了堆外的实现。这里只说HeapByteBuffer
+ByteBuffer最核心的方法是put(byte)和get()。分别是往ByteBuffer里写一个字节，和读一个字节。
+
+值得注意的是，ByteBuffer的读写模式是分开的，正常的应用场景是：往ByteBuffer里写一些数据，然后flip()，然后再读出来。
+
+这里插两个Channel方面的对象，以便更好的理解Buffer
