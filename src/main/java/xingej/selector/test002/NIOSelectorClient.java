@@ -51,10 +51,12 @@ public class NIOSelectorClient {
     private void createAndRegister(int socketChannelNum) throws Exception{
         ExecutorService socketThreadPool = Executors.newFixedThreadPool(5);
         Integer[] ports = {8081, 8082};
+
         for(int i = 0; i < socketChannelNum; i++) {
             int port = ports[i % 2];
            socketThreadPool.submit(new SocketChannelThread(port));
         }
+
         socketThreadPool.shutdown();
     }
 

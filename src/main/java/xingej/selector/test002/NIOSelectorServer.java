@@ -1,16 +1,16 @@
 package xingej.selector.test002;
 
+//基本思路逻辑：
 //------------------------------------------------------------------------------
-//创建一个通道选择器Selector
-//创建服务器端的ServerSocketChannel通道
-//  设置ServerSocketChannel属性，
-//  端口号的绑定
-// 将通道选择器 与  ServerSocketChannel通道进行绑定，并向通道选择器注册感兴趣的事件
+//1、创建一个通道选择器Selector
+//2、创建服务器端的ServerSocketChannel通道
+//      设置ServerSocketChannel属性，
+//      端口号的绑定
+// 3、将通道选择器 与  ServerSocketChannel通道进行绑定，并向通道选择器注册感兴趣的事件
 //------------------------------------------------------------------------------
-// 通道选择器开始工作监听管道事件，调用select()方法，死循环的方式调用
-// 如果用户感兴趣的事件发生，就去处理
-
-// 否则，就阻塞在这里
+// 4、通道选择器开始工作监听管道事件，调用select()方法，死循环的方式调用
+//      如果用户感兴趣的事件发生，就去处理
+//      否则，就阻塞在这里
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -46,11 +46,12 @@ public class NIOSelectorServer {
 
     //开始业务监听了
     public void listen() throws Exception {
+
         System.out.println("-----服务器-------开始接收请求-------OK--------");
+
         while (true) {
             int readyChannelNum = selector.select();
             if (0 == readyChannelNum) {
-                System.out.println("---------此时没有----客户端请求链接哦--------");
                 continue;
             }
             //从选择器中的selectedKeys，可以获取此时已经准备好的管道事件
@@ -88,13 +89,11 @@ public class NIOSelectorServer {
                     msg.append(new String(receiveBuffer.array()));
                     receiveBuffer.clear();//清楚数据，下次可以重新写入
                 }
-                socketChannel.register(selector, SelectionKey.OP_WRITE);
-                System.out.println("------->:\t" + socketChannel.getRemoteAddress());
-//                selectionKey.interestOps(SelectionKey.OP_WRITE);
+                socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                 //打印输出从客户端读取到的信息
-                System.out.println("--->:\t" + msg.toString());
+                System.out.println("------>:\t" + msg.toString());
 
-                socketChannel.close();
+//                socketChannel.close();
             } else
                 //向客户端 发送数据
                 if (selectionKey.isWritable()) {
@@ -110,6 +109,7 @@ public class NIOSelectorServer {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
+    //创建ServerSocketChannel对象，并进行属性设置
     private ServerSocketChannel builderServerSocketChannel(int port) throws Exception {
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
         //设置属性，如非阻塞模式
@@ -118,7 +118,6 @@ public class NIOSelectorServer {
         serverSocketChannel.bind(new InetSocketAddress(port));
         return serverSocketChannel;
     }
-
 
     public static void main(String[] args) throws Exception {
         NIOSelectorServer nioSelectorServer = new NIOSelectorServer();
