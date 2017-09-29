@@ -26,7 +26,6 @@ public class NIOServer {
 
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT );
         //下面的写法是错误的，
-        //
 //        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_READ | SelectionKey.OP_WRITE);
     }
 
