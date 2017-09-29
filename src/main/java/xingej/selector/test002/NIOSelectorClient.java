@@ -3,6 +3,7 @@ package xingej.selector.test002;
 //      链接服务器
 //向服务器发送消息
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -11,16 +12,14 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 //改成多线程模式
 public class NIOSelectorClient {
     private static Selector selector;
-    private SocketChannel socketChannel;
-    private SocketChannel socketChannelB;
-    private SocketChannel socketChannelC;
-
+    private static boolean flag = false;
     private ByteBuffer sendBuffer = ByteBuffer.allocate(1024);
 
     public void initAndRegister() throws Exception{
@@ -28,66 +27,56 @@ public class NIOSelectorClient {
         createAndRegister(5);
     }
 
-    public void initAndRegister3() throws Exception{
-        selector = Selector.open();
-        socketChannel = SocketChannel.open();
-        socketChannel.configureBlocking(false);
-        socketChannel.connect(new InetSocketAddress("localhost", 8081));
-
-        socketChannel.register(selector, SelectionKey.OP_CONNECT);
-
-        socketChannelB = SocketChannel.open();
-        socketChannelB.configureBlocking(false);
-        socketChannelB.connect(new InetSocketAddress("localhost", 8082));
-        socketChannelB.register(selector, SelectionKey.OP_CONNECT);
-
-        socketChannelC = SocketChannel.open();
-        socketChannelC.configureBlocking(false);
-        socketChannelC.connect(new InetSocketAddress("localhost", 8082));
-        socketChannelC.register(selector, SelectionKey.OP_CONNECT);
-    }
-
-
     private void createAndRegister(int socketChannelNum) throws Exception{
         ExecutorService socketThreadPool = Executors.newFixedThreadPool(5);
+        CountDownLatch _latchs = new CountDownLatch(socketChannelNum);
         Integer[] ports = {8081, 8082};
 
         for(int i = 0; i < socketChannelNum; i++) {
             int port = ports[i % 2];
-           socketThreadPool.submit(new SocketChannelThread(port));
+           socketThreadPool.submit(new SocketChannelThread(port, _latchs));
         }
-
+        System.out.println("-----------------------1-----------------------------");
+        _latchs.await();
+        System.out.println("-----------------------2-----------------------------");
         socketThreadPool.shutdown();
+        System.out.println("-----------------------3-----------------------------");
+        flag = true;
+
     }
 
     class SocketChannelThread implements Runnable{
+        private CountDownLatch _latch;
         private int port;
-        public SocketChannelThread(int port) {
+        private SocketChannel socketChannel;
+
+        public SocketChannelThread(int port, CountDownLatch _latch) {
             this.port = port;
+            this._latch = _latch;
         }
         @Override
         public void run() {
             try {
-                SocketChannel sc = SocketChannel.open();
-                sc.configureBlocking(false);
-                System.out.println("--------1-------");
+                socketChannel= SocketChannel.open();
+                socketChannel.configureBlocking(false);
                 //1到10秒钟，随机休息
                 int time = (new Random().nextInt(10) + 1) * 1000;
                 System.out.println("-----time------:\t" + time);
                 Thread.sleep(time);
                 System.out.println("--------2-------port:\t" + port);
-                sc.connect(new InetSocketAddress("localhost", port));
+                socketChannel.connect(new InetSocketAddress("localhost", port));
                 System.out.println("--------3-------");
-                sc.register(selector, SelectionKey.OP_CONNECT);
+                socketChannel.register(selector, SelectionKey.OP_CONNECT);
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                //计数器，减一
+                _latch.countDown();
             }
         }
     }
 
     public void listen() throws Exception{
-
-//        Thread.sleep(15000);
 
         while (true) {
             System.out.println("-----客户端----准备好了----:\t");
@@ -118,8 +107,10 @@ public class NIOSelectorClient {
                     sendBuffer.flip();
                     socketChannel.write(sendBuffer);
                     System.out.println("----客户端---向服务器---发送消息-----完毕----OK-----");
+
                     selectionKey.interestOps(SelectionKey.OP_WRITE);
                 }
+
             }
             Thread.sleep(500);
         }
@@ -129,6 +120,12 @@ public class NIOSelectorClient {
     public static void main(String[] args) throws Exception{
         NIOSelectorClient nioSelectorClient = new NIOSelectorClient();
         nioSelectorClient.initAndRegister();
-        nioSelectorClient.listen();
+
+        while (true) {
+            if (flag) {
+                nioSelectorClient.listen();
+                break;
+            }
+        }
     }
 }
