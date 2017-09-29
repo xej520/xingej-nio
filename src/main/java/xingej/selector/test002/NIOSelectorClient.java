@@ -3,7 +3,6 @@ package xingej.selector.test002;
 //      链接服务器
 //向服务器发送消息
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -36,11 +35,8 @@ public class NIOSelectorClient {
             int port = ports[i % 2];
            socketThreadPool.submit(new SocketChannelThread(port, _latchs));
         }
-        System.out.println("-----------------------1-----------------------------");
         _latchs.await();
-        System.out.println("-----------------------2-----------------------------");
         socketThreadPool.shutdown();
-        System.out.println("-----------------------3-----------------------------");
         flag = true;
 
     }
@@ -60,8 +56,9 @@ public class NIOSelectorClient {
                 socketChannel= SocketChannel.open();
                 socketChannel.configureBlocking(false);
                 //1到10秒钟，随机休息
+                //这里，添加时间的目的，是想模拟一下，不想同一时间，向服务器发起请求
                 int time = (new Random().nextInt(10) + 1) * 1000;
-                System.out.println("-----time------:\t" + time);
+                System.out.println("----此通道----休息的时间是------:\t" + time / 1000 + " 秒");
                 Thread.sleep(time);
                 System.out.println("--------2-------port:\t" + port);
                 socketChannel.connect(new InetSocketAddress("localhost", port));
@@ -107,12 +104,15 @@ public class NIOSelectorClient {
                     sendBuffer.flip();
                     socketChannel.write(sendBuffer);
                     System.out.println("----客户端---向服务器---发送消息-----完毕----OK-----");
-
+                    //这里注册的事件是write，
+                    //效果就是，客户端不断的发送消息
+                    //当然，也可以修改成其他事件，如SelectionKey.OP_READ
                     selectionKey.interestOps(SelectionKey.OP_WRITE);
                 }
 
             }
-            Thread.sleep(500);
+            //每隔1秒中，就向服务器发送信息
+            Thread.sleep(1000);
         }
 
     }
@@ -121,6 +121,8 @@ public class NIOSelectorClient {
         NIOSelectorClient nioSelectorClient = new NIOSelectorClient();
         nioSelectorClient.initAndRegister();
 
+        //死循环的方式，来监听标志位，
+        //一旦标志位发生改变，就开始监听
         while (true) {
             if (flag) {
                 nioSelectorClient.listen();
