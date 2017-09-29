@@ -90,6 +90,7 @@ public class NIOSelectorClient {
             while (iterator.hasNext()) {
                 SelectionKey selectionKey = iterator.next();
                 SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+                //下面的方法，就可以将selectionKey 键移除
                 iterator.remove();
                 if (selectionKey.isConnectable()) {
                     if (socketChannel.isConnectionPending()) {
